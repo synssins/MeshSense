@@ -8,6 +8,7 @@
   import Map, { expandedMap } from './Map.svelte'
   import OpenLayersMap from './lib/OpenLayersMap.svelte'
   import Bluetooth from './Bluetooth.svelte'
+  import SerialPorts from './SerialPorts.svelte'
   import Message from './Message.svelte'
   import { allowRemoteMessaging, connectionStatus, version } from 'api/src/vars'
   import UpdateStatus from './lib/UpdateStatus.svelte'
@@ -51,6 +52,7 @@
       <Address class="shrink-0" />
     {/if}
     <Bluetooth class="shrink-0" />
+    <SerialPorts class="shrink-0" />
     <!-- <Channels class="shrink-0" /> -->
     <Nodes {ol} class="grow" />
     {#if window.location.hostname == 'localhost' || $hasAccess || $allowRemoteMessaging}
@@ -64,8 +66,9 @@
       <div class="grid items-center px-5 m-auto">
         <div class="text-3xl font-bold text-white">Welcome to MeshSense!</div>
         <div class="max-w-md mt-5 flex flex-col gap-4">
-          <div>Available bluetooth devices will appear on the left</div>
-          <div>If your device is on the network, enter it's IP address in the Device IP field and click Connect.</div>
+          <div>Available Bluetooth and Serial devices will appear on the left</div>
+          <div>If your device is on the network, enter its IP address in the Address field and click Connect.</div>
+          <div>For USB serial connections, select a port from the Serial Ports list or enter the port manually (e.g., COM3).</div>
 
           {#if !$hasAccess}
             <div>If you do not see the option to connect, you can get access by connecting via localhost or by setting your Access and User key.</div>

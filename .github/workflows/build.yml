@@ -41,6 +41,12 @@ jobs:
         working-directory: api
         run: npm ci
 
+      - name: Build meshtastic-js dependency
+        working-directory: api/meshtastic-js
+        run: |
+          npm ci
+          npm run build
+
       - name: Build webbluetooth dependency
         working-directory: api/webbluetooth
         run: |
@@ -108,6 +114,12 @@ jobs:
         working-directory: api
         run: npm ci
 
+      - name: Build meshtastic-js dependency
+        working-directory: api/meshtastic-js
+        run: |
+          npm ci
+          npm run build
+
       - name: Build webbluetooth dependency
         working-directory: api/webbluetooth
         run: |
@@ -166,6 +178,12 @@ jobs:
       - name: Install API dependencies
         working-directory: api
         run: npm ci
+
+      - name: Build meshtastic-js dependency
+        working-directory: api/meshtastic-js
+        run: |
+          npm ci
+          npm run build
 
       - name: Build webbluetooth dependency
         working-directory: api/webbluetooth

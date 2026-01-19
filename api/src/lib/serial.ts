@@ -129,19 +129,31 @@ export async function listSerialPorts(): Promise<SerialPortInfo[]> {
 /**
  * Validate that a path looks like a valid serial port
  * Windows: COM1, COM2, etc.
- * Linux: /dev/ttyUSB0, /dev/ttyACM0, etc.
- * macOS: /dev/tty.usbserial-*, /dev/cu.usbmodem*, etc.
+ * Linux: /dev/ttyUSB0, /dev/ttyACM0, /dev/ttyS0, /dev/ttyAMA0, etc.
+ * macOS: /dev/tty.usbserial-*, /dev/cu.usbmodem*, /dev/tty.SLAB_USBtoUART, etc.
  */
 export function isValidSerialPath(path: string): boolean {
   if (!path || typeof path !== 'string') return false;
 
-  // Windows COM ports
-  if (/^COM\d+$/i.test(path)) return true;
+  // Windows COM ports (COM1-COM256)
+  if (/^COM\d{1,3}$/i.test(path)) return true;
 
-  // Linux/macOS tty devices
-  if (/^\/dev\/tty(USB|ACM|S)\d+$/.test(path)) return true;
-  if (/^\/dev\/tty\.(usbserial|usbmodem|SLAB_USBtoUART|wchusbserial)[\w-]*$/i.test(path)) return true;
-  if (/^\/dev\/cu\.(usbserial|usbmodem|SLAB_USBtoUART|wchusbserial)[\w-]*$/i.test(path)) return true;
+  // Linux tty devices
+  // - /dev/ttyUSB0, /dev/ttyUSB1, etc. (USB-serial adapters)
+  // - /dev/ttyACM0, /dev/ttyACM1, etc. (USB CDC ACM devices)
+  // - /dev/ttyS0, /dev/ttyS1, etc. (hardware serial ports)
+  // - /dev/ttyAMA0, etc. (Raspberry Pi GPIO serial)
+  // - /dev/serial/by-id/* (udev symlinks)
+  if (/^\/dev\/tty(USB|ACM|S|AMA|O)\d+$/.test(path)) return true;
+  if (/^\/dev\/serial\/by-(id|path)\/[\w\-.:]+$/.test(path)) return true;
+
+  // macOS tty/cu devices
+  // - /dev/tty.usbserial-* (FTDI, Prolific, etc.)
+  // - /dev/tty.usbmodem* (CDC ACM devices)
+  // - /dev/tty.SLAB_USBtoUART (Silicon Labs CP210x)
+  // - /dev/tty.wchusbserial* (WCH CH340/CH341)
+  // - /dev/cu.* variants (callout devices, preferred for outgoing)
+  if (/^\/dev\/(tty|cu)\.(usbserial|usbmodem|SLAB_USBtoUART|wchusbserial|Bluetooth|usb)[\w\-.]*/i.test(path)) return true;
 
   return false;
 }
@@ -153,11 +165,11 @@ export function isValidSerialPath(path: string): boolean {
 export function isSerialPort(address: string): boolean {
   if (!address) return false;
 
-  // Check Windows COM port pattern
-  if (/^COM\d+$/i.test(address)) return true;
+  // Check Windows COM port pattern (COM1-COM256)
+  if (/^COM\d{1,3}$/i.test(address)) return true;
 
-  // Check Unix-style paths
-  if (address.startsWith('/dev/tty') || address.startsWith('/dev/cu.')) return true;
+  // Check Unix-style paths (Linux and macOS)
+  if (address.startsWith('/dev/tty') || address.startsWith('/dev/cu.') || address.startsWith('/dev/serial/')) return true;
 
   return false;
 }

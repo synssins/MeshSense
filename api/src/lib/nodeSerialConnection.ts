@@ -29,6 +29,8 @@ export class NodeSerialConnection extends MeshDevice {
   private baudRate: number = 115200;
   private receiveBuffer: Buffer = Buffer.alloc(0);
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private disconnectPending: boolean = false;
+  private intentionalDisconnect: boolean = false;
 
   constructor(configId?: number) {
     super(configId);
@@ -46,6 +48,8 @@ export class NodeSerialConnection extends MeshDevice {
     this.path = path;
     this.baudRate = baudRate;
     this.portId = path;
+    this.intentionalDisconnect = false;
+    this.disconnectPending = false;
 
     console.log(`[NodeSerialConnection] Connecting to ${path} at ${baudRate} baud`);
     this.updateDeviceStatus(Types.DeviceStatusEnum.DeviceConnecting);
@@ -59,14 +63,18 @@ export class NodeSerialConnection extends MeshDevice {
 
       this.port.on('error', (err) => {
         console.error('[NodeSerialConnection] Port error:', err.message);
-        this.updateDeviceStatus(Types.DeviceStatusEnum.DeviceDisconnected);
+        // Only trigger disconnect if the port is actually closed and we haven't already started disconnecting
+        if (!this.disconnectPending && !this.port?.isOpen) {
+          this.handleUnexpectedDisconnect();
+        }
       });
 
       this.port.on('close', () => {
-        console.log('[NodeSerialConnection] Port closed');
-        this.updateDeviceStatus(Types.DeviceStatusEnum.DeviceDisconnected);
-        this.stopHeartbeat();
-        this.complete();
+        console.log('[NodeSerialConnection] Port closed event received');
+        // Only trigger disconnect if this wasn't an intentional disconnect and we haven't already started
+        if (!this.intentionalDisconnect && !this.disconnectPending) {
+          this.handleUnexpectedDisconnect();
+        }
       });
 
       this.port.on('data', (data: Buffer) => {
@@ -101,7 +109,9 @@ export class NodeSerialConnection extends MeshDevice {
    * Disconnect from the serial port
    */
   public async disconnect(): Promise<void> {
-    console.log('[NodeSerialConnection] Disconnecting');
+    console.log('[NodeSerialConnection] Disconnecting (intentional)');
+    this.intentionalDisconnect = true;
+    this.disconnectPending = true;
     this.stopHeartbeat();
 
     return new Promise((resolve) => {
@@ -113,15 +123,40 @@ export class NodeSerialConnection extends MeshDevice {
           this.port = null;
           this.updateDeviceStatus(Types.DeviceStatusEnum.DeviceDisconnected);
           this.complete();
+          this.disconnectPending = false;
           resolve();
         });
       } else {
         this.port = null;
         this.updateDeviceStatus(Types.DeviceStatusEnum.DeviceDisconnected);
         this.complete();
+        this.disconnectPending = false;
         resolve();
       }
     });
+  }
+
+  /**
+   * Handle unexpected disconnection with debouncing
+   * This helps filter out spurious disconnect events from USB device changes
+   */
+  private handleUnexpectedDisconnect(): void {
+    if (this.disconnectPending) return;
+    this.disconnectPending = true;
+
+    // Add a brief delay to filter out spurious events
+    setTimeout(() => {
+      // Double-check that the port is actually closed
+      if (!this.port?.isOpen) {
+        console.log('[NodeSerialConnection] Confirmed port disconnection');
+        this.updateDeviceStatus(Types.DeviceStatusEnum.DeviceDisconnected);
+        this.stopHeartbeat();
+        this.complete();
+      } else {
+        console.log('[NodeSerialConnection] Port still open, ignoring spurious disconnect event');
+        this.disconnectPending = false;
+      }
+    }, 100);
   }
 
   /**

@@ -40,6 +40,8 @@ let routeCache: State<Record<number, number[]>>
 
 let connection: HttpConnection | BleConnection | NodeSerialConnection
 let connectionIntended = false
+let reconnectDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let isReconnecting = false
 // address.subscribe(connect)
 
 /** Tracks when nodes were last requested a traceroute: `traceRouteLog[nodeNum]` */
@@ -177,7 +179,14 @@ function extractPayload(packet: MeshPacket): Record<string, any> {
 /** Disconnect from any existing connection */
 export async function disconnect(setIntent = true) {
   connectionStatus.set('disconnected')
-  if (setIntent) connectionIntended = false
+  if (setIntent) {
+    connectionIntended = false
+    isReconnecting = false
+    if (reconnectDebounceTimer) {
+      clearTimeout(reconnectDebounceTimer)
+      reconnectDebounceTimer = null
+    }
+  }
   console.log('Disconnecting from device')
   if (connection) {
     disableReconnect()
@@ -251,15 +260,26 @@ export async function connect(address?: string) {
       connectionStatus.set('connecting')
     } else if (e == 7) {
       connectionStatus.set('connected')
+      isReconnecting = false
       // setTime()
       // } else if (e == 4) {
       // await disconnect()
     } else if (e == 2) {
-      console.log('Connection Intended', connectionIntended)
-      if (connectionIntended) {
+      console.log('Connection Intended', connectionIntended, 'isReconnecting', isReconnecting)
+      if (connectionIntended && !isReconnecting) {
+        // Debounce reconnection attempts to prevent rapid state cycling
+        if (reconnectDebounceTimer) {
+          clearTimeout(reconnectDebounceTimer)
+        }
         connectionStatus.set('reconnecting')
-        connect(address)
-      } else {
+        isReconnecting = true
+        reconnectDebounceTimer = setTimeout(() => {
+          console.log('[meshtastic] Attempting reconnection after debounce')
+          connect(address).finally(() => {
+            isReconnecting = false
+          })
+        }, 500)
+      } else if (!connectionIntended) {
         connectionStatus.set('disconnected')
         reset()
       }

@@ -9,3 +9,6 @@ api/prebuilds
 electron/resources/api
 electron/resources/prebuilds
 electron-builder.env
+
+# Claude Code development documentation
+CLAUDE.md

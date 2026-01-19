@@ -29,6 +29,8 @@ import {
   version
 } from './vars'
 import { beginScanning, bluetoothDevices, stopScanning } from './lib/bluetooth'
+import { NodeSerialConnection } from './lib/nodeSerialConnection'
+import { isSerialPort, listSerialPorts, serialPortList } from './lib/serial'
 import exitHook from 'exit-hook'
 import * as geolib from 'geolib'
 import axios from 'axios'
@@ -36,7 +38,7 @@ import { State } from './lib/state'
 
 let routeCache: State<Record<number, number[]>>
 
-let connection: HttpConnection | BleConnection
+let connection: HttpConnection | BleConnection | NodeSerialConnection
 let connectionIntended = false
 // address.subscribe(connect)
 
@@ -197,8 +199,8 @@ export function reset() {
 }
 
 /**
- * Connects to a MeshTastic Node using an HTTP connection.
- * @param {string} address - The IP address of the MeshTastic Node to connect to.
+ * Connects to a MeshTastic Node using HTTP, Bluetooth, or Serial connection.
+ * @param {string} address - The IP address, MAC address, or serial port path to connect to.
  */
 export async function connect(address?: string) {
   console.log('[meshtastic] Calling connect', address)
@@ -221,6 +223,10 @@ export async function connect(address?: string) {
     /** If device never showed up, bail */
     if (!bluetoothDevices[address]) return
     stopScanning()
+  } else if (isSerialPort(address)) {
+    /** Serial Port Connection */
+    console.log('[meshtastic] Detected serial port address:', address)
+    connection = new NodeSerialConnection()
   } else {
     /** HTTP Endpoint */
     connection = new HttpConnection()
@@ -481,10 +487,14 @@ export async function connect(address?: string) {
   })
 
   // Attempt to connect to the specified MeshTastic Node
-  console.log('[meshtastic] Connecting to Node', address, connection instanceof BleConnection ? 'via Bluetooth' : 'via IP')
+  const connectionType = connection instanceof BleConnection ? 'Bluetooth' :
+                         connection instanceof NodeSerialConnection ? 'Serial' : 'IP'
+  console.log('[meshtastic] Connecting to Node', address, 'via', connectionType)
+
   if (connection instanceof BleConnection) {
-    // console.log(bluetoothDevices[address])
     await connection.connect({ device: bluetoothDevices[address] })
+  } else if (connection instanceof NodeSerialConnection) {
+    await connection.connect({ path: address, baudRate: 115200 })
   } else {
     process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
     await connection.connect({ address, fetchInterval: 2000, tls: enableTLS.value })

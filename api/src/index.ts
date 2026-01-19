@@ -3,6 +3,7 @@ import './lib/persistence'
 import { app, createRoutes, finalize, server } from './lib/server'
 import './meshtastic'
 import { connect, disconnect, deleteNodes, requestPosition, send, traceRoute, setPosition, deviceConfig } from './meshtastic'
+import { listSerialPorts } from './lib/serial'
 import { address, apiPort, currentTime, apiHostname, accessKey, autoConnectOnStartup, meshSenseNewsDate, allowRemoteMessaging } from './vars'
 import { hostname } from 'os'
 import intercept from 'intercept-stdout'
@@ -103,6 +104,19 @@ createRoutes((app) => {
     console.log('[express]', '/position', req.body)
     setPosition(req.body)
     return res.sendStatus(200)
+  })
+
+  /** List available serial ports */
+  app.get('/serialPorts', async (req, res) => {
+    if (!isAuthorized(req)) return res.sendStatus(403)
+    console.log('[express]', '/serialPorts')
+    try {
+      const ports = await listSerialPorts()
+      return res.json(ports)
+    } catch (e) {
+      console.error('[express] Error listing serial ports:', e)
+      return res.status(500).json({ error: 'Failed to list serial ports' })
+    }
   })
 
   //** Set accessKey via environment variable */

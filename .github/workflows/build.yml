@@ -51,7 +51,10 @@ jobs:
         working-directory: api/webbluetooth
         run: |
           npm ci
-          npm run build:all
+          npm run build:cpp
+          npx tsc
+        env:
+          npm_config_build_from_source: true
 
       - name: Build API
         working-directory: api
@@ -108,7 +111,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libudev-dev
+          sudo apt-get install -y libudev-dev libusb-1.0-0-dev libbluetooth-dev
 
       - name: Install API dependencies
         working-directory: api
@@ -124,7 +127,8 @@ jobs:
         working-directory: api/webbluetooth
         run: |
           npm ci
-          npm run build:all
+          npm run build:cpp
+          npx tsc
 
       - name: Build API
         working-directory: api
@@ -189,7 +193,8 @@ jobs:
         working-directory: api/webbluetooth
         run: |
           npm ci
-          npm run build:all
+          npm run build:cpp
+          npx tsc
 
       - name: Build API
         working-directory: api

@@ -25,11 +25,16 @@ const config = {
   win: {
     artifactName: '${name}' + channelString + '-${arch}.${ext}',
     executableName: 'MeshSense',
-    signingHashAlgorithms: ['sha256'],
-    publisherName: ['Affirmatech Inc.', 'Affirmatech Incorporated'],
-    signAndEditExecutable: true,
-    verifyUpdateCodeSignature: true,
-    certificateSubjectName: 'Affirmatech Incorporated'
+    // Only enable code signing when certificate is available (via CSC_LINK env var)
+    ...(process.env.CSC_LINK ? {
+      signingHashAlgorithms: ['sha256'],
+      publisherName: ['Affirmatech Inc.', 'Affirmatech Incorporated'],
+      signAndEditExecutable: true,
+      verifyUpdateCodeSignature: true,
+      certificateSubjectName: 'Affirmatech Incorporated'
+    } : {
+      signAndEditExecutable: false
+    })
   },
   nsis: {
     artifactName: '${name}' + channelString + '-${arch}.${ext}',

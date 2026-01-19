@@ -56,16 +56,16 @@ jobs:
         env:
           npm_config_build_from_source: true
 
-      - name: Build API
-        working-directory: api
-        run: npm run build
-
       - name: Install UI dependencies
         working-directory: ui
         run: npm ci
 
       - name: Build UI
         working-directory: ui
+        run: npm run build
+
+      - name: Build API
+        working-directory: api
         run: npm run build
 
       - name: Install Electron dependencies
@@ -130,16 +130,16 @@ jobs:
           npm run build:cpp
           npx tsc
 
-      - name: Build API
-        working-directory: api
-        run: npm run build
-
       - name: Install UI dependencies
         working-directory: ui
         run: npm ci
 
       - name: Build UI
         working-directory: ui
+        run: npm run build
+
+      - name: Build API
+        working-directory: api
         run: npm run build
 
       - name: Install Electron dependencies
@@ -196,16 +196,16 @@ jobs:
           npm run build:cpp
           npx tsc
 
-      - name: Build API
-        working-directory: api
-        run: npm run build
-
       - name: Install UI dependencies
         working-directory: ui
         run: npm ci
 
       - name: Build UI
         working-directory: ui
+        run: npm run build
+
+      - name: Build API
+        working-directory: api
         run: npm run build
 
       - name: Install Electron dependencies

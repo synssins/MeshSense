@@ -74,8 +74,11 @@ export default defineConfig({
       ignoreGlobal: true
     }),
     typescript({
-      target: 'esnext'
+      target: 'esnext',
       // sourceMap: true
+      // Exclude submodule source directories - they have their own pre-built dist
+      include: ['src/**/*.ts'],
+      exclude: ['meshtastic-js/**', 'webbluetooth/**', 'node_modules/**']
     }),
     json()
   ]

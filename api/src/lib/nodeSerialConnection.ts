@@ -4,8 +4,7 @@
  */
 
 import { SerialPort } from 'serialport'
-import { MeshDevice } from '../../meshtastic-js/src/meshDevice'
-import * as Types from '../../meshtastic-js/src/types'
+import { MeshDevice, Types } from '../../meshtastic-js/dist'
 
 /** Meshtastic serial framing constants */
 const SERIAL_MAGIC_BYTE1 = 0x94;
@@ -38,9 +37,11 @@ export class NodeSerialConnection extends MeshDevice {
 
   /**
    * Connect to a Meshtastic device via serial port
+   * @param params - Node serial connection parameters (path and optional baudRate)
    */
-  public async connect(params: NodeSerialConnectionParameters): Promise<void> {
-    const { path, baudRate = 115200 } = params;
+  public async connect(params: NodeSerialConnectionParameters | Types.ConnectionParameters): Promise<void> {
+    const nodeParams = params as NodeSerialConnectionParameters;
+    const { path, baudRate = 115200 } = nodeParams;
 
     this.path = path;
     this.baudRate = baudRate;
